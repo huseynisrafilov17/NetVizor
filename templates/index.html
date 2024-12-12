@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { padding: 10px; font-size: 16px; }
+        .result { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Network Scanner</h1>
+    
+    <form id="scanForm">
+        <label for="ip">Enter IP Address:</label>
+        <input type="text" id="ip" name="ip" required>
+        <button type="submit">Scan</button>
+    </form>
+
+    <div class="result" id="result"></div>
+
+    <h2>Scan Subnet</h2>
+    <form id="scanNetworkForm">
+        <label for="subnet">Enter Subnet (e.g., 192.168.1.0/24):</label>
+        <input type="text" id="subnet" name="subnet" required>
+        <button type="submit">Scan Network</button>
+    </form>
+
+    <div class="networkResult" id="networkResult"></div>
+
+    <script>
+        document.getElementById('scanForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let ip = document.getElementById('ip').value;
+
+            fetch('/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'ip=' + encodeURIComponent(ip)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `
+                    <h3>Scan Results</h3>
+                    <p><strong>Host:</strong> ${data.host}</p>
+                    <p><strong>Hostname:</strong> ${data.hostname}</p>
+                    <p><strong>MAC Address:</strong> ${data.mac_address}</p>
+                    <p><strong>Open Ports:</strong> ${data.open_ports.length ? data.open_ports.join(', ') : 'No open ports found.'}</p>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('scanNetworkForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            let subnet = document.getElementById('subnet').value;
+
+            fetch('/scan_network', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'subnet=' + encodeURIComponent(subnet)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const networkResultDiv = document.getElementById('networkResult');
+                networkResultDiv.innerHTML = '<h3>Network Scan Results</h3>';
+                for (const ip in data) {
+                    const device = data[ip];
+                    networkResultDiv.innerHTML += `
+                        <p><strong>IP:</strong> ${ip}</p>
+                        <p><strong>Hostname:</strong> ${device.hostname}</p>
+                        <p><strong>MAC Address:</strong> ${device.mac_address}</p>
+                        <p><strong>Open Ports:</strong> ${device.open_ports.length ? device.open_ports.join(', ') : 'No open ports found.'}</p>
+                        <hr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+
+</body>
+</html>
