@@ -1,6 +1,6 @@
 import asyncio
 from flask import Flask, render_template, request, jsonify
-from netVizor import scan_single_ip_async, scan_network_async_with_queue
+from netVizor import scan_single_ip_async, scan_network_async
 app = Flask(__name__)
 
 @app.route('/')
@@ -16,8 +16,9 @@ def scan():
 @app.route('/scan_network', methods=['POST'])
 def scan_network_route():
     subnet = request.form['subnet']
-    results = asyncio.run(scan_network_async_with_queue(subnet))
+    print("zor")
+    results = asyncio.run(scan_network_async(subnet))
     return jsonify(results)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="10.249.160.137")

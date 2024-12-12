@@ -5,9 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Scanner</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        input, button { padding: 10px; font-size: 16px; }
-        .result { margin-top: 20px; }
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: white;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            background: url('{{ url_for("static", filename="images/444.jpg") }}') no-repeat center center fixed;  /* Correct image path */
+            background-size: cover;
+            font-size: 12px;  /* Small font size for entire page */
+            text-align: left;  /* Align text to the left */
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 1.8em; /* Smaller font size for the title */
+            margin-left: 20px;  /* Align title to the left */
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;  /* Align items to the left */
+            margin: 20px 0;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-size: 1em;
+            margin-left: 40px;  /* Align label to the left */
+        }
+
+        input, button {
+            padding: 8px;
+            font-size: 14px;
+            margin: 10px 0;
+            width: 250px;
+            max-width: 80%;
+            border-radius: 25px;  /* Circular corners */
+            text-align: center;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+        }
+
+        .result, .networkResult {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 25px;  /* Circular corners */
+            width: 100%;
+            max-width: 600px;
+            margin-left: 20px;  /* Align result box to the left */
+        }
+
+        .result h3, .networkResult h3 {
+            font-size: 1.2em;
+        }
+
+        .result p, .networkResult p {
+            font-size: 1em;
+        }
     </style>
 </head>
 <body>
@@ -32,6 +95,7 @@
     <div class="networkResult" id="networkResult"></div>
 
     <script>
+        // Network Scan Functions
         document.getElementById('scanForm').addEventListener('submit', function(event) {
             event.preventDefault();
             let ip = document.getElementById('ip').value;
