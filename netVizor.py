@@ -5,6 +5,8 @@ import ipaddress
 import platform
 import subprocess
 import re
+from scapy.all import srp, Ether, ARP, conf
+
 
 WELL_KNOWN_PORTS = list(range(1, 1025)) + [
     1701, 1723, 3306, 3389, 5900, 8080, 8443, 9000,
@@ -37,16 +39,15 @@ def get_hostname(ip):
 
 def get_mac_address(ip):
     try:
-        result = subprocess.run(["arp", "-a"], capture_output=True, text=True)
-        lines = result.stdout.splitlines()
-        for line in lines:
-            if ip in line:
-                return line.split()[1].upper()
-
+        conf.verb = 0
+        pkt = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=ip)
+        answered, _ = srp(pkt, timeout=2, retry=2)
+        
+        for sent, received in answered:
+            return received.hwsrc
     except Exception as e:
         print(f"Error retrieving MAC address for {ip}: {e}")
-
-    return None
+        return None
 
 async def ping_host(ip):
     try:
@@ -62,15 +63,12 @@ async def scan_single_ip_async(ip, semaphore=asyncio.Semaphore(1)):
     try:
         async with semaphore:
             open_ports = await scan_ports_async(ip, WELL_KNOWN_PORTS)
-            print(open_ports)
             hostname = get_hostname(ip)
-            print(hostname)
             mac_address = get_mac_address(ip)
-            print(mac_address)
             return {
                 "host": ip,
                 "hostname": hostname,
-                "mac_address": mac_address,
+                "mac_address": mac_address.upper(),
                 "open_ports": open_ports
             }
     except:
@@ -79,13 +77,11 @@ async def scan_single_ip_async(ip, semaphore=asyncio.Semaphore(1)):
 async def scan_network_async(subnet):
     reachable_ips = []
     tasks = [ping_host(str(ip)) for ip in ipaddress.IPv4Network(subnet, strict=False)]
-    
     ping_results = await asyncio.gather(*tasks)
     reachable_ips = [ip for ip in ping_results if ip is not None]
-    print(reachable_ips)
     
     results = {}
-    network_semaphore = asyncio.Semaphore(2)
+    network_semaphore = asyncio.Semaphore(1)
     scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips]
     scan_results = await asyncio.gather(*scan_tasks)
     
