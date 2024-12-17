@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Network Scanner</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        color: white;
+        margin: 0;
+        height: 100vh;
+        background: url('{{ url_for("static", filename="images/444.jpg") }}')
+          no-repeat center center fixed;
+        background-size: cover;
+        font-size: 12px;
+        text-align: left;
+      }
+
+      h1 {
+        color: #ffffff;
+        font-size: 1.8em;
+        margin-left: 20px;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin: 20px 0;
+      }
+
+      label {
+        margin-bottom: 5px;
+        font-size: 1em;
+        margin-left: 40px;
+      }
+
+      input,
+      button {
+        padding: 8px;
+        font-size: 14px;
+        margin: 10px 0;
+        width: 250px;
+        max-width: 80%;
+        border-radius: 25px;
+        text-align: center;
+      }
+
+      button {
+        background-color: #333;
+        color: white;
+        border: none;
+      }
+
+      .result,
+      .networkResult {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 25px;
+        width: 100%;
+        max-width: 600px;
+        margin-left: 20px;
+      }
+
+      .result h3,
+      .networkResult h3 {
+        font-size: 1.2em;
+      }
+
+      .result p,
+      .networkResult p {
+        font-size: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Network Scanner</h1>
+
+    <form id="scanForm">
+      <label for="ip">Enter IP Address:</label>
+      <input type="text" id="ip" name="ip" required />
+      <button type="submit">Scan</button>
+    </form>
+
+    <div class="result" id="result"></div>
+
+    <h2>Scan Subnet</h2>
+    <form id="scanNetworkForm">
+      <label for="subnet">Enter Subnet (e.g., 192.168.1.0/24):</label>
+      <input type="text" id="subnet" name="subnet" required />
+      <button type="submit">Scan Network</button>
+    </form>
+
+    <div class="networkResult" id="networkResult"></div>
+
+    <script>
+      document
+        .getElementById("scanForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          let ip = document.getElementById("ip").value;
+
+          fetch("/scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "ip=" + encodeURIComponent(ip),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              const resultDiv = document.getElementById("result");
+              if (data.error) {
+                resultDiv.innerHTML = `<p><strong>Error:</strong> ${data.error}</p>`;
+              } else {
+                resultDiv.innerHTML = `
+                    <h3>Scan Results</h3>
+                    <p><strong>Host:</strong> ${data.host}</p>
+                    <p><strong>Hostname:</strong> ${data.hostname}</p>
+                    <p><strong>MAC Address:</strong> ${data.mac_address}</p>
+                    <p><strong>Open Ports:</strong> ${
+                      data.open_ports.length
+                        ? data.open_ports.join(", ")
+                        : "No open ports found."
+                    }</p>
+                `;
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+
+      document
+        .getElementById("scanNetworkForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          let subnet = document.getElementById("subnet").value;
+
+          fetch("/scan_network", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "subnet=" + encodeURIComponent(subnet),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              const networkResultDiv = document.getElementById("networkResult");
+              if (data.error) {
+                networkResultDiv.innerHTML = `<p><strong>Error:</strong> ${data.error}</p>`;
+              } else {
+                networkResultDiv.innerHTML = "<h3>Network Scan Results</h3>";
+                for (const ip in data) {
+                  const device = data[ip];
+                  networkResultDiv.innerHTML += `
+                        <p><strong>IP:</strong> ${ip}</p>
+                        <p><strong>Hostname:</strong> ${device.hostname}</p>
+                        <p><strong>MAC Address:</strong> ${
+                          device.mac_address
+                        }</p>
+                        <p><strong>Open Ports:</strong> ${
+                          device.open_ports.length
+                            ? device.open_ports.join(", ")
+                            : "No open ports found."
+                        }</p>
+                        <hr>
+                    `;
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Topology</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        #network {
+            width: 100%;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Network Topology</h1>
+    <div id="network"></div>
+
+    <script>
+        async function fetchTopology() {
+            // Fetch topology data from Flask API
+            const response = await fetch('/api/topology');
+            return response.json();
+        }
+
+        async function drawNetwork() {
+            const topology = await fetchTopology();
+
+            // Create a network graph
+            const container = document.getElementById('network');
+            const data = {
+                nodes: new vis.DataSet(topology.nodes),
+                edges: new vis.DataSet(topology.edges)
+            };
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    size: 20,
+                    font: {
+                        size: 16
+                    },
+                },
+                edges: {
+                    arrows: "to",
+                    color: {
+                        color: "gray"
+                    }
+                },
+                physics: {
+                    enabled: true
+                }
+            };
+            new vis.Network(container, data, options);
+        }
+
+        drawNetwork();
+    </script>
+</body>
+</html> -->
