@@ -18,7 +18,7 @@ TOPOLOGY_DATA = {
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("tool.html")
 
 @app.route("/api/topology")
 def get_topology():

@@ -101,7 +101,16 @@ async def scan_network_async(subnet):
         ping_results = await asyncio.gather(*tasks)
         reachable_ips = [ip for ip in ping_results if ip is not None]
     
-        results = {}
+        results = {
+            "nodes": [
+                {"id": "Switch", "label": "Switch", "group": "switch"},
+                {"id": "192.168.1.2", "label": "192.168.1.2\nHost1", "group": "host"},
+                {"id": "192.168.1.3", "label": "192.168.1.3\nHost2", "group": "host"},
+            ],
+            "edges": [
+                {"from": "Switch", "to": "192.168.1.2"},
+                {"from": "Switch", "to": "192.168.1.3"},
+        ]}
         network_semaphore = asyncio.Semaphore(1)
         scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips]
         scan_results = await asyncio.gather(*scan_tasks)
@@ -113,3 +122,14 @@ async def scan_network_async(subnet):
         return results
     else:
         return {"error": "Please enter a valid IP address."}
+    TOPOLOGY_DATA = {
+    "nodes": [
+        {"id": "Switch", "label": "Switch", "group": "switch"},
+        {"id": "192.168.1.2", "label": "192.168.1.2\nHost1", "group": "host"},
+        {"id": "192.168.1.3", "label": "192.168.1.3\nHost2", "group": "host"},
+    ],
+    "edges": [
+        {"from": "Switch", "to": "192.168.1.2"},
+        {"from": "Switch", "to": "192.168.1.3"},
+    ]
+}

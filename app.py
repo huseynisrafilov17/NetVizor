@@ -39,9 +39,28 @@ if __name__ == '__main__':
                 match scan_choice:
                     case 1:
                         ip = input("Please enter an IPv4 address: ")
+                        results = asyncio.run(scan_single_ip_async(ip))
+                        print()
+                        for key, value in results.items():
+                            if isinstance(value, list):
+                                print(f"{key.replace("_", " ").capitalize()}: {', '.join(list(map(lambda x: str(x), value)))}")
+                            else:
+                                print(f"{key.replace("_", " ").capitalize()}: {value}")
+                    case 2:
+                        subnet = input("Please enter a Subnet (e.g., 192.168.1.0/24): ")
+                        results = asyncio.run(scan_network_async(subnet))
+                        for dictionary in results.values():
+                            print()
+                            for key, value in dictionary.items():
+                                if isinstance(value, list):
+                                    print(f"{key.replace("_", " ").capitalize()}: {', '.join(list(map(lambda x: str(x), value)))}")
+                                else:
+                                    print(f"{key.replace("_", " ").capitalize()}: {value}")
+                    case _:
+                        print("Wrong input.")
             case 2:
                 app.run(host='0.0.0.0')
             case _:
                 print("Wrong input.")
-    except:
-        print("Wrong input.")
+    except Exception as e:
+        print(f"Wrong input. {e}")
