@@ -127,7 +127,7 @@ async def scan_network_async(subnet):
     
         results = {}
         network_semaphore = asyncio.Semaphore(1)
-        scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips]
+        scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips[:3]]
         scan_results = await asyncio.gather(*scan_tasks)
         ID = 1
     
