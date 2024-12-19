@@ -65,7 +65,7 @@ def get_mac_address(ip):
         answered, _ = srp(pkt, timeout=2, retry=2)
         
         for sent, received in answered:
-            return received.hwsrc
+            return received.hwsrc.upper()
     except Exception as e:
         print(f"Error retrieving MAC address for {ip}: {e}")
         return None
@@ -89,17 +89,17 @@ async def scan_single_ip_async(ip, use_ai=True, semaphore=asyncio.Semaphore(1)):
                 mac_address = get_mac_address(ip)
                 os = "Windows"
                 if use_ai:
-                    description = model.generate_content(f'"hostname": {hostname}\n"host": {ip}\n"mac_address": {mac_address.upper()}\n"os": {os}\n"open_ports": {open_ports}.\n Give me a feedback on this. Additionally, give us information about possible exploits and possible fixes. Give the output in raw text without any formatting, with new lines, without feedback: at the start. Keep it concise and mention everything important.')
+                    description = model.generate_content(f'"hostname": {hostname}\n"host": {ip}\n"mac_address": {mac_address}\n"os": {os}\n"open_ports": {open_ports}.\n Give me a feedback on this. Additionally, give us information about possible exploits and possible fixes. Give the output in raw text without any formatting, with new lines, without feedback: at the start. Keep it concise and mention everything important.')
                 return {
                     "hostname": hostname,
                     "host": ip,
-                    "mac_address": mac_address.upper(),
+                    "mac_address": mac_address if mac_address else "Different subnet",
                     "os": os,
                     "group": "host",
                     "open_ports": open_ports,
                     "description": description.text if use_ai else ""
                 }
-        except:
+        except Exception as e:
             return None
     else:
         return {"error": "Please enter a valid IP address."}
@@ -113,7 +113,7 @@ async def scan_network_async(subnet):
     
         results = {}
         network_semaphore = asyncio.Semaphore(1)
-        scan_tasks = [scan_single_ip_async(ip, False, network_semaphore) for ip in reachable_ips[:3]]
+        scan_tasks = [scan_single_ip_async(ip, False, network_semaphore) for ip in reachable_ips[:6]]
         scan_results = await asyncio.gather(*scan_tasks)
         ID = 1
     

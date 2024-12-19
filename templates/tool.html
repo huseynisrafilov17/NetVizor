@@ -910,7 +910,7 @@
     ></script>
   </head>
   <body>
-    <div style="display: flex; align-items: center; justify-content: center">
+    <a href="/" style="display: flex; align-items: center; justify-content: center; text-decoration: none; ">
       <img
         src='{{ url_for("static", filename="assets/img/logo_only.png") }}'
         height="36px"
@@ -918,6 +918,13 @@
         alt=""
       />
       <h1>NetVizor</h1>
+    </a>
+    <!-- <div id="anime-girl" style="position: absolute; left: 0; bottom: 0; z-index: -1">
+      <img
+        src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWF1YXp3cmFvYzFreG1xczNnZTl3YzcxaHhoOHJ0a2djOXo5YmRvMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/10a8AOSeP6Rqfu/giphy.gif"
+        alt="Hatsune Miku Animation"
+        height="144px"
+      /> -->
     </div>
     <h2>Scan Host</h2>
 
@@ -1047,7 +1054,7 @@
                   .getElementById("read-more")
                   .addEventListener("click", function (event) {
                     event.preventDefault();
-                    container.textContent = data.description;
+                    container.innerHTML = `<strong>Suggestions:</strong> ${data.description}`;
                   });
               }
             })
@@ -1186,6 +1193,29 @@
               console.error("Error:", error);
             });
         });
+
+      // const animeGirl = document.getElementById("anime-girl");
+
+      // function moveAnimeGirl() {
+      //   const windowWidth = window.innerWidth;
+      //   const windowHeight = window.innerHeight;
+      //   let currentX = 0;
+      //   let currentY = windowHeight - 100; // Position at the bottom initially
+
+      //   function animate() {
+      //     currentX += 2; // Change speed here
+      //     if (currentX > windowWidth) {
+      //       currentX = -100; // Reset to start from left
+      //     }
+      //     animeGirl.style.transform = `translateX(${currentX}px) translateY(${currentY}px)`;
+
+      //     requestAnimationFrame(animate); // Continue the animation
+      //   }
+
+      //   animate();
+      // }
+
+      // window.onload = moveAnimeGirl;
     </script>
   </body>
 </html>
