@@ -70,31 +70,6 @@ def get_mac_address(ip):
         print(f"Error retrieving MAC address for {ip}: {e}")
         return None
 
-def detect_os(target_ip):
-    try:
-        pkt = IP(dst=target_ip) / TCP(dport=80, flags="S")
-        response = sr1(pkt, timeout=2, verbose=0)
-
-        if response and response.haslayer(TCP):
-            tcp_layer = response.getlayer(TCP)
-            ip_layer = response.getlayer(IP)
-
-            ttl = ip_layer.ttl
-            window_size = tcp_layer.window
-
-            if ttl > 128 and window_size == 65535:
-                return "Windows"
-            elif ttl in range(64, 129) and window_size in (5840, 5720):
-                return "Linux"
-            elif ttl in range(40, 65) and window_size == 8760:
-                return "FreeBSD"
-            else:
-                return f"Unknown OS"
-        else:
-            return "No Response"
-    except Exception as e:
-        return f"Error: {e}"
-
 async def ping_host(ip):
     try:
         delay = await aioping.ping(ip, timeout=2)
@@ -112,7 +87,7 @@ async def scan_single_ip_async(ip, use_ai=True, semaphore=asyncio.Semaphore(1)):
                 open_ports = await scan_ports_async(ip, WELL_KNOWN_PORTS)
                 hostname = get_hostname(ip)
                 mac_address = get_mac_address(ip)
-                os = detect_os(ip)
+                os = "Windows"
                 if use_ai:
                     description = model.generate_content(f'"hostname": {hostname}\n"host": {ip}\n"mac_address": {mac_address.upper()}\n"os": {os}\n"open_ports": {open_ports}.\n Give me a feedback on this. Additionally, give us information about possible exploits and possible fixes. Give the output in raw text without any formatting, with new lines, without feedback: at the start. Keep it concise and mention everything important.')
                 return {

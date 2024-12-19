@@ -919,6 +919,7 @@
       />
       <h1>NetVizor</h1>
     </div>
+    <h2>Scan Host</h2>
 
     <form id="scanForm">
       <label for="ip">Enter IP Address:</label>
@@ -1032,13 +1033,22 @@
                               ? data.open_ports.join(", ")
                               : "No open ports found."
                           }</p>
-                          <p><strong>Suggestions:</strong> ${
-                            data.description.split(" * ")[0]
-                          }</p>
+                          <p id="description"><strong>Suggestions:</strong>${data.description.slice(
+                            0,
+                            100
+                          )}
+                    <a href="#" id="read-more" style="text-decoration: none">...Read more</a></p>
                           <p><strong>Time Taken:</strong> ${
                             endTime - startTime
                           } ms</p>
                       `;
+                const container = document.getElementById("description");
+                document
+                  .getElementById("read-more")
+                  .addEventListener("click", function (event) {
+                    event.preventDefault();
+                    container.textContent = data.description;
+                  });
               }
             })
             .catch((error) => {
