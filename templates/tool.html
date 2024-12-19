@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -8,18 +8,56 @@
       body {
         font-family: Arial, sans-serif;
         padding: 20px;
-        color: white;
+        color: black;
         margin: 0;
         height: 100vh;
-        background: url('{{ url_for("static", filename="images/444.jpg") }}')
-          no-repeat center center fixed;
-        background-size: cover;
         font-size: 12px;
         text-align: left;
       }
+      .sidebar {
+        width: 300px;
+        height: 100%;
+        background-color: #f4f4f4;
+        position: fixed;
+        top: 0;
+        right: -500px;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+        transition: right 0.3s ease;
+        padding: 20px;
+      }
+
+      .sidebar.active {
+        right: 0;
+      }
+
+      .sidebar h2 {
+        margin-top: 0;
+      }
+
+      .sidebar fieldset {
+        margin-bottom: 20px;
+      }
+
+      .open-sidebar-button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      .open-sidebar-button:hover {
+        background-color: #0056b3;
+      }
+
+      #network {
+        width: 100%;
+        height: 600px;
+        border: 1px solid lightgray;
+      }
 
       h1 {
-        color: #ffffff;
+        color: #000;
         font-size: 1.8em;
         margin-left: 20px;
       }
@@ -75,6 +113,10 @@
         font-size: 1em;
       }
     </style>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+    ></script>
   </head>
   <body>
     <h1>Network Scanner</h1>
@@ -87,6 +129,31 @@
 
     <div class="result" id="result"></div>
 
+    <div class="sidebar" id="sidebar">
+      <h2>Host Details</h2>
+      <fieldset>
+        <legend>Hostname</legend>
+        <p id="hostname">Loading...</p>
+      </fieldset>
+      <fieldset>
+        <legend>Host</legend>
+        <p id="host">Loading...</p>
+      </fieldset>
+      <fieldset>
+        <legend>Mac Address</legend>
+        <p id="mac">Loading...</p>
+      </fieldset>
+      <fieldset>
+        <legend>OS</legend>
+        <p id="os">Loading...</p>
+      </fieldset>
+      <fieldset>
+        <legend>Open Ports</legend>
+        <ul id="openPorts">
+          <li>Loading...</li>
+        </ul>
+      </fieldset>
+    </div>
     <h2>Scan Subnet</h2>
     <form id="scanNetworkForm">
       <label for="subnet">Enter Subnet (e.g., 192.168.1.0/24):</label>
@@ -150,215 +217,109 @@
                 networkResultDiv.innerHTML = `<p><strong>Error:</strong> ${data.error}</p>`;
               } else {
                 networkResultDiv.innerHTML = "<h3>Network Scan Results</h3>";
-                for (const ip in data) {
-                  const device = data[ip];
-                  networkResultDiv.innerHTML += `
-                        <p><strong>IP:</strong> ${ip}</p>
-                        <p><strong>Hostname:</strong> ${device.hostname}</p>
-                        <p><strong>MAC Address:</strong> ${
-                          device.mac_address
-                        }</p>
-                        <p><strong>Open Ports:</strong> ${
-                          device.open_ports.length
-                            ? device.open_ports.join(", ")
-                            : "No open ports found."
-                        }</p>
-                        <hr>
-                    `;
+                async function drawNetwork() {
+                  const topology_data = await fetchTopology();
+
+                  const nodeData = {
+                    0: {
+                      hostname: "Switch",
+                      host: "Switch",
+                      os: "Switch",
+                      group: "switch",
+                      openPorts: [],
+                    },
+                    ...topology_data,
+                  };
+
+                  const container = document.getElementById("networkResult");
+                  const nodes = new vis.DataSet(
+                    Object.keys(nodeData).map((key) => {
+                      return {
+                        id: parseInt(key),
+                        label: nodeData[key].host,
+                        group: nodeData[key].group,
+                      };
+                    })
+                  );
+
+                  const edges = new vis.DataSet(
+                    Object.keys(topology_data).map((key) => {
+                      return { from: 0, to: parseInt(key) };
+                    })
+                  );
+
+                  const data = { nodes, edges };
+                  const options = {
+                    nodes: {
+                      shape: "dot",
+                      size: 20,
+                      font: {
+                        size: 16,
+                      },
+                    },
+                    edges: {
+                      arrows: "to",
+                      color: {
+                        color: "gray",
+                      },
+                    },
+                    physics: {
+                      enabled: true,
+                    },
+                  };
+                  const network = new vis.Network(container, data, options);
+
+                  network.on("click", function (params) {
+                    if (params.nodes.length > 0) {
+                      const nodeId = params.nodes[0];
+                      const details = nodeData[nodeId];
+                      if (details) {
+                        document.getElementById("hostname").textContent =
+                          details.hostname;
+                        document.getElementById("host").textContent =
+                          details.host;
+                        document.getElementById("mac").textContent =
+                          details.mac_address;
+                        document.getElementById("os").textContent = details.os;
+
+                        const openPortsList =
+                          document.getElementById("openPorts");
+                        openPortsList.innerHTML = "";
+                        if (
+                          details.open_ports &&
+                          details.open_ports.length > 0
+                        ) {
+                          details.open_ports.forEach((port) => {
+                            const listItem = document.createElement("li");
+                            listItem.textContent = port;
+                            openPortsList.appendChild(listItem);
+                          });
+                        }
+
+                        document
+                          .getElementById("sidebar")
+                          .classList.add("active");
+                      }
+                    }
+                  });
+
+                  document.addEventListener("click", (event) => {
+                    const sidebar = document.getElementById("sidebar");
+                    if (
+                      !sidebar.contains(event.target) &&
+                      !container.contains(event.target)
+                    ) {
+                      sidebar.classList.remove("active");
+                    }
+                  });
                 }
+                drawNetwork();
               }
             })
             .catch((error) => {
               console.error("Error:", error);
             });
         });
-    </script>
-  </body>
-</html> -->
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Network Topology</title>
-    <script
-      type="text/javascript"
-      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
-    ></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-
-      .sidebar {
-        width: 300px;
-        height: 100%;
-        background-color: #f4f4f4;
-        position: fixed;
-        top: 0;
-        right: -500px;
-        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-        transition: right 0.3s ease;
-        padding: 20px;
-      }
-
-      .sidebar.active {
-        right: 0;
-      }
-
-      .sidebar h2 {
-        margin-top: 0;
-      }
-
-      .sidebar fieldset {
-        margin-bottom: 20px;
-      }
-
-      .open-sidebar-button {
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-
-      .open-sidebar-button:hover {
-        background-color: #0056b3;
-      }
-      #network {
-        width: 100%;
-        height: 600px;
-        border: 1px solid lightgray;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Network Topology</h1>
-    <div id="network"></div>
-    <div class="sidebar" id="sidebar">
-      <h2>Host Details</h2>
-      <fieldset>
-        <legend>Hostname</legend>
-        <p id="hostname">Loading...</p>
-      </fieldset>
-      <fieldset>
-        <legend>Host</legend>
-        <p id="host">Loading...</p>
-      </fieldset>
-      <fieldset>
-        <legend>Mac Address</legend>
-        <p id="mac">Loading...</p>
-      </fieldset>
-      <fieldset>
-        <legend>OS</legend>
-        <p id="os">Loading...</p>
-      </fieldset>
-      <fieldset>
-        <legend>Open Ports</legend>
-        <ul id="openPorts">
-          <li>Loading...</li>
-        </ul>
-      </fieldset>
-    </div>
-
-    <script>
-      async function fetchTopology() {
-        const response = await fetch("/scan_network", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "subnet=" + encodeURIComponent("10.249.160.0/24"),
-        });
-        return response.json();
-      }
-
-      async function drawNetwork() {
-
-        const topology_data = await fetchTopology()
-
-        const nodeData = {
-          0: {
-            hostname: "Switch",
-            host: "Switch",
-            os: "Switch",
-            group: "switch",
-            openPorts: [],
-          },
-          ...topology_data,
-        };
-
-        const container = document.getElementById("network");
-        const nodes = new vis.DataSet(
-          Object.keys(nodeData).map((key) => {
-            return { id: parseInt(key), label: nodeData[key].host, group: nodeData[key].group };
-          })
-        );
-
-        const edges = new vis.DataSet(
-          Object.keys(topology_data).map((key) => {
-            return { from: 0, to: parseInt(key) };
-          })
-        );
-
-        const data = { nodes, edges };
-        const options = {
-          nodes: {
-            shape: "dot",
-            size: 20,
-            font: {
-              size: 16,
-            },
-          },
-          edges: {
-            arrows: "to",
-            color: {
-              color: "gray",
-            },
-          },
-          physics: {
-            enabled: true,
-          },
-        };
-        const network = new vis.Network(container, data, options);
-
-        network.on("click", function (params) {
-          if (params.nodes.length > 0) {
-            const nodeId = params.nodes[0];
-            const details = nodeData[nodeId];
-            if (details) {
-              document.getElementById("hostname").textContent =
-                details.hostname;
-              document.getElementById("host").textContent = details.host;
-              document.getElementById("mac").textContent = details.mac_address;
-              document.getElementById("os").textContent = details.os;
-
-              const openPortsList = document.getElementById("openPorts");
-              openPortsList.innerHTML = "";
-              if (details.open_ports && details.open_ports.length > 0) {
-                details.open_ports.forEach((port) => {
-                  const listItem = document.createElement("li");
-                  listItem.textContent = port;
-                  openPortsList.appendChild(listItem);
-                });
-              }
-
-              document.getElementById("sidebar").classList.add("active");
-            }
-          }
-        });
-
-        document.addEventListener("click", (event) => {
-          const sidebar = document.getElementById("sidebar");
-          if (
-            !sidebar.contains(event.target) &&
-            !container.contains(event.target)
-          ) {
-            sidebar.classList.remove("active");
-          }
-        });
-      }
-      drawNetwork();
     </script>
   </body>
 </html>
