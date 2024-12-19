@@ -910,7 +910,11 @@
     ></script>
   </head>
   <body>
-    <h1><i class="fas fa-network-wired"></i>NetVizor</h1>
+    
+    <div style="display: flex; align-items: center; justify-content: center;">
+      <img src='{{ url_for("static", filename="assets/img/logo_only.png") }}' height="36px" style="margin-right: 5px" alt="">
+      <h1>NetVizor</h1>
+    </div>
 
     <form id="scanForm">
       <label for="ip">Enter IP Address:</label>
@@ -990,12 +994,13 @@
           const ip = document.getElementById("ip").value;
           const button = document.getElementById("scanButton");
 
-          // Save original button text for later restoration
           if (!button.dataset.originalText) {
             button.dataset.originalText = button.innerHTML;
           }
 
           toggleLoading(button, true);
+          var startTime = new Date().getTime(),
+            endTime;
 
           fetch("/scan", {
             method: "POST",
@@ -1006,8 +1011,9 @@
             .then((data) => {
               toggleLoading(button, false);
               const resultDiv = document.getElementById("result");
-              if (data.error) {
-                resultDiv.innerHTML = `<p><strong>Error:</strong> ${data.error}</p>`;
+              endTime = new Date().getTime();
+              if (!data.host) {
+                resultDiv.innerHTML = `<p><strong>Error:</strong> ${data}</p>`;
               } else {
                 resultDiv.innerHTML = `
                           <h3><i class='fas fa-file-alt'></i> Scan Results</h3>
@@ -1016,11 +1022,16 @@
                           <p><strong>MAC Address:</strong> ${
                             data.mac_address
                           }</p>
+                          <p><strong>Operating System:</strong> ${data.os}</p>
                           <p><strong>Open Ports:</strong> ${
                             data.open_ports.length
                               ? data.open_ports.join(", ")
                               : "No open ports found."
                           }</p>
+                          <p><strong>Suggestions:</strong> ${
+                            data.description
+                          }</p>
+                          <p><strong>Time Taken:</strong> ${endTime - startTime} ms</p>
                       `;
               }
             })
