@@ -114,7 +114,7 @@ async def scan_single_ip_async(ip, use_ai=True, semaphore=asyncio.Semaphore(1)):
                 mac_address = get_mac_address(ip)
                 os = detect_os(ip)
                 if use_ai:
-                    description = model.generate_content(f'"hostname": {hostname}\n"host": {ip}\n"mac_address": {mac_address.upper()}\n"os": {os}\n"open_ports": {open_ports}.\n Give me a feedback on this. Additionally, give us information about possible exploits and possible fixes. Give the output in raw text without any formatting, with new lines, without feedback: at the start.')
+                    description = model.generate_content(f'"hostname": {hostname}\n"host": {ip}\n"mac_address": {mac_address.upper()}\n"os": {os}\n"open_ports": {open_ports}.\n Give me a feedback on this. Additionally, give us information about possible exploits and possible fixes. Give the output in raw text without any formatting, with new lines, without feedback: at the start. Keep it concise and mention everything important.')
                 return {
                     "hostname": hostname,
                     "host": ip,
@@ -122,7 +122,7 @@ async def scan_single_ip_async(ip, use_ai=True, semaphore=asyncio.Semaphore(1)):
                     "os": os,
                     "group": "host",
                     "open_ports": open_ports,
-                    "description": description.text.replace(" * ", "\n") if use_ai else ""
+                    "description": description.text if use_ai else ""
                 }
         except:
             return None

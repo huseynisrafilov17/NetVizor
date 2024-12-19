@@ -910,9 +910,13 @@
     ></script>
   </head>
   <body>
-    
-    <div style="display: flex; align-items: center; justify-content: center;">
-      <img src='{{ url_for("static", filename="assets/img/logo_only.png") }}' height="36px" style="margin-right: 5px" alt="">
+    <div style="display: flex; align-items: center; justify-content: center">
+      <img
+        src='{{ url_for("static", filename="assets/img/logo_only.png") }}'
+        height="36px"
+        style="margin-right: 5px"
+        alt=""
+      />
       <h1>NetVizor</h1>
     </div>
 
@@ -1029,9 +1033,11 @@
                               : "No open ports found."
                           }</p>
                           <p><strong>Suggestions:</strong> ${
-                            data.description
+                            data.description.split(" * ")[0]
                           }</p>
-                          <p><strong>Time Taken:</strong> ${endTime - startTime} ms</p>
+                          <p><strong>Time Taken:</strong> ${
+                            endTime - startTime
+                          } ms</p>
                       `;
               }
             })
@@ -1142,6 +1148,8 @@
                           listItem.textContent = port;
                           openPortsList.appendChild(listItem);
                         });
+                      } else {
+                        openPortsList.innerHTML = "No open ports found.";
                       }
 
                       document
