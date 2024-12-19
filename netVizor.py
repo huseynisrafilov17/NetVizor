@@ -2,7 +2,7 @@ import aioping
 import asyncio
 import socket
 import ipaddress
-from scapy.all import srp, Ether, ARP, conf
+from scapy.all import srp, Ether, ARP, conf, sr1, IP, TCP
 
 
 WELL_KNOWN_PORTS = list(range(1, 1025)) + [
@@ -66,6 +66,27 @@ def get_mac_address(ip):
         print(f"Error retrieving MAC address for {ip}: {e}")
         return None
 
+def detect_os(target_ip):
+    try:
+        # Send a SYN packet to the target
+        pkt = IP(dst=target_ip) / TCP(dport=80, flags="S")
+        response = sr1(pkt, timeout=2, verbose=0)
+
+        if response and response.haslayer(TCP):
+            window_size = response.getlayer(TCP).window
+            if window_size == 65535:
+                return "Windows"
+            elif window_size == 5840 or window_size == 5720:
+                return "Linux"
+            elif window_size == 8760:
+                return "FreeBSD"
+            else:
+                return "Unknown OS"
+        else:
+            return "No Response"
+    except Exception as e:
+        return f"Error: {e}"
+
 async def ping_host(ip):
     try:
         delay = await aioping.ping(ip, timeout=2)
@@ -83,10 +104,13 @@ async def scan_single_ip_async(ip, semaphore=asyncio.Semaphore(1)):
                 open_ports = await scan_ports_async(ip, WELL_KNOWN_PORTS)
                 hostname = get_hostname(ip)
                 mac_address = get_mac_address(ip)
+                os = detect_os(ip)
                 return {
-                    "host": ip,
                     "hostname": hostname,
+                    "host": ip,
                     "mac_address": mac_address.upper(),
+                    "os": os,
+                    "group": "host",
                     "open_ports": open_ports
                 }
         except:
@@ -101,35 +125,17 @@ async def scan_network_async(subnet):
         ping_results = await asyncio.gather(*tasks)
         reachable_ips = [ip for ip in ping_results if ip is not None]
     
-        results = {
-            "nodes": [
-                {"id": "Switch", "label": "Switch", "group": "switch"},
-                {"id": "192.168.1.2", "label": "192.168.1.2\nHost1", "group": "host"},
-                {"id": "192.168.1.3", "label": "192.168.1.3\nHost2", "group": "host"},
-            ],
-            "edges": [
-                {"from": "Switch", "to": "192.168.1.2"},
-                {"from": "Switch", "to": "192.168.1.3"},
-        ]}
+        results = {}
         network_semaphore = asyncio.Semaphore(1)
-        scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips]
+        scan_tasks = [scan_single_ip_async(ip, network_semaphore) for ip in reachable_ips[:3]]
         scan_results = await asyncio.gather(*scan_tasks)
+        ID = 1
     
         for result in scan_results:
             if result and (result["open_ports"] or result["mac_address"]):
-                results[result["host"]] = result
+                results[f"{ID}"] = result
+                ID += 1
     
         return results
     else:
         return {"error": "Please enter a valid IP address."}
-    TOPOLOGY_DATA = {
-    "nodes": [
-        {"id": "Switch", "label": "Switch", "group": "switch"},
-        {"id": "192.168.1.2", "label": "192.168.1.2\nHost1", "group": "host"},
-        {"id": "192.168.1.3", "label": "192.168.1.3\nHost2", "group": "host"},
-    ],
-    "edges": [
-        {"from": "Switch", "to": "192.168.1.2"},
-        {"from": "Switch", "to": "192.168.1.3"},
-    ]
-}
